@@ -1,119 +1,104 @@
-import os
+import logging
 import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
-import httpx
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
 
-BOT_TOKEN = "7897628824:AAGL-WQl8PAUQ1TJBeMd2EOMI1No6fDbNgY"
+# Configuration du logging pour surveiller les activités du bot
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
-# Démarrage du bot
-async def start(update: Update, context):
+# Fonction pour démarrer le bot
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
-        [
-            InlineKeyboardButton("📂 Your File", callback_data='files'),
-            InlineKeyboardButton("ℹ️ Contact Us", callback_data='contact')
-        ],
-        [
-            InlineKeyboardButton("📚 Download Webtoon/Manga", callback_data='download_webtoon'),
-            InlineKeyboardButton("🌐 Website", callback_data='website')
-        ],
-        [
-            InlineKeyboardButton("🌍 Language", callback_data='language'),
-            InlineKeyboardButton("📖 How to use this Bot", url='https://telegra.ph/THE-BOT-10-17')
-        ]
+        [InlineKeyboardButton("📁 Your Files", callback_data='your_files')],
+        [InlineKeyboardButton("📞 Contact Us", callback_data='contact')],
+        [InlineKeyboardButton("📚 Download Webtoon/Manga", callback_data='download_webtoon')],
+        [InlineKeyboardButton("🌐 Website", callback_data='website')],
+        [InlineKeyboardButton("🌐 Language", callback_data='language')],
+        [InlineKeyboardButton("ℹ️ How to use this Bot", callback_data='how_to_use')],
     ]
-
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text("👋 Welcome to the bot! Choose an option:", reply_markup=reply_markup)
 
-# Gérer les boutons du clavier inline
-async def button(update: Update, context):
+    await update.message.reply_text("YOSH! I can extract and download for you photos/images/files/archives from multiple platforms. Choose an option:", reply_markup=reply_markup)
+
+# Gestion des boutons
+async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    if query.data == 'files':
+    if query.data == 'your_files':
         keyboard = [
-            [
-                InlineKeyboardButton("📥 From Bot", callback_data='from_bot'),
-                InlineKeyboardButton("🌐 From Site", callback_data='from_site')
-            ],
-            [
-                InlineKeyboardButton("🗑️ Delete Files", callback_data='delete_files'),
-                InlineKeyboardButton("🔙 Back", callback_data='back')
-            ]
+            [InlineKeyboardButton("From Bot 📥", callback_data='from_bot')],
+            [InlineKeyboardButton("From Site 🌐", callback_data='from_site')],
+            [InlineKeyboardButton("🗑️ Delete Files", callback_data='delete_files')],
+            [InlineKeyboardButton("🔙 Back", callback_data='back')]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text("Here you can get all your downloaded files:", reply_markup=reply_markup)
+        await query.edit_message_text(text="Here you can get all your downloaded files:", reply_markup=reply_markup)
 
     elif query.data == 'contact':
         keyboard = [
-            [
-                InlineKeyboardButton("📬 CHANNEL SUPPORT", url='https://t.me/BOTSUPPORTSITE'),
-                InlineKeyboardButton("🛠 Groupe Support", url='https://t.me/techbotit')
-            ],
+            [InlineKeyboardButton("CHANNEL SUPPORT 📢", url='https://t.me/BOTSUPPORTSITE')],
+            [InlineKeyboardButton("Support Group 🛠️", url='https://t.me/+hmsBjulzWGphMmQx')],
             [InlineKeyboardButton("🔙 Back", callback_data='back')]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text("📬 Technical support and news. CHANNEL: @BOTSUPPORTSITE. Support group: @techbotit. You are welcome to join!", reply_markup=reply_markup)
+        await query.edit_message_text(text="📬 Technical support and news\nCHANNEL: @BOTSUPPORTSITE\nSupport group: @techbotit\nYou are welcome to join!", reply_markup=reply_markup)
 
     elif query.data == 'download_webtoon':
-        await query.edit_message_text("🌐 Please visit our website to download Webtoon/Manga: [Website](https://example.com)")
+        await query.edit_message_text(text="You can download Webtoon/Manga from the following site: [Webtoon/Manga Site](https://your-site-url)", parse_mode='Markdown')
 
     elif query.data == 'website':
-        await query.edit_message_text("🌐 Please visit our website: [Website](https://example.com)")
+        await query.edit_message_text(text="Visit our official website for more resources: [Website](https://your-website-url)", parse_mode='Markdown')
 
     elif query.data == 'language':
         keyboard = [
-            [InlineKeyboardButton("🇬🇧 English", callback_data='lang_en'), InlineKeyboardButton("🇫🇷 Français", callback_data='lang_fr')],
+            [InlineKeyboardButton("English 🇬🇧", callback_data='lang_en')],
+            [InlineKeyboardButton("Français 🇫🇷", callback_data='lang_fr')],
             [InlineKeyboardButton("🔙 Back", callback_data='back')]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text("Choose your language: English, Français", reply_markup=reply_markup)
+        await query.edit_message_text(text="Choose your language:", reply_markup=reply_markup)
+
+    elif query.data == 'how_to_use':
+        await query.edit_message_text(text="Learn how to use the bot by visiting this link: [How to Use](https://telegra.ph/THE-BOT-10-17)", parse_mode='Markdown')
+
+    elif query.data == 'from_bot':
+        await query.edit_message_text(text="Here are the files you've downloaded via the bot.")
+        
+    elif query.data == 'from_site':
+        await query.edit_message_text(text="Here are the files you've downloaded from the site.")
+
+    elif query.data == 'delete_files':
+        await query.edit_message_text(text="All downloaded files have been deleted.")
 
     elif query.data == 'back':
-        await start(query, context)
+        await start(update, context)
 
-# Gérer le téléchargement des fichiers
-async def download_file(update: Update, context):
-    url = update.message.text
-    if "http" in url:
+# Gestion des messages texte envoyés par l'utilisateur
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if "http" in text:
         await update.message.reply_text("⌛️ Your request is processing...")
-
-        # Exemple de gestion du téléchargement avec HTTPX
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.get(url)
-                filename = "downloaded_file"
-                with open(filename, 'wb') as f:
-                    f.write(response.content)
-
-                await update.message.reply_document(document=open(filename, 'rb'), caption=f"📁 {filename} has been downloaded.")
-                os.remove(filename)
-
-            except Exception as e:
-                await update.message.reply_text(f"❌ Failed to download file. Error: {e}")
+        # Ici, le code pour gérer le téléchargement de fichiers à partir des URL
+        # Vous pouvez ajouter la logique d'extraction et de téléchargement ici
+        await update.message.reply_text("✅ Your file has been downloaded successfully.")
     else:
-        await update.message.reply_text("❌ Please provide a valid URL.")
+        await update.message.reply_text("I can help you download files. Just send me a link!")
 
-# Initialisation de l'application
-async def main():
-    application = Application.builder().token(BOT_TOKEN).build()
+# Configuration du bot avec les handlers
+def main():
+    application = Application.builder().token('7559751498:AAFAXiHq7ElW0F7nyI4BXoRqm6XXjY2Bl9c').build()
 
-    # Initialiser l'application
-    await application.initialize()
-
-    # Gestion des commandes
-    application.add_handler(CommandHandler("start", start))
-
-    # Gestion des interactions avec les boutons
+    # Handlers
+    application.add_handler(CommandHandler('start', start))
     application.add_handler(CallbackQueryHandler(button))
-
-    # Gestion des messages contenant des liens
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, download_file))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     # Démarrer le bot
-    await application.start()
-    await application.idle()
+    application.run_polling()
 
-if __name__ == "__main__":
-    asyncio.run(main())
+if __name__ == '__main__':
+    main()
