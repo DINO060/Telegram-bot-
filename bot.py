@@ -4,7 +4,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 import httpx
 
-BOT_TOKEN = "VOTRE_TOKEN_ICI"
+BOT_TOKEN = "7897628824:AAGL-WQl8PAUQ1TJBeMd2EOMI1No6fDbNgY"
 
 # Démarrage du bot
 async def start(update: Update, context):
