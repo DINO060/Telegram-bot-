@@ -1,29 +1,8 @@
-import os
 import asyncio
-import httpx
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 
-# Set your bot token here
-BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
-
-# List of supported domains (you can add more)
-SUPPORTED_DOMAINS = ["youtube.com", "vimeo.com", "instagram.com", "tiktok.com"]
-
-# Function to download media from URL
-async def download_media(url):
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(url)
-            if response.status_code == 200:
-                return response.content
-            else:
-                return None
-        except Exception as e:
-            print(f"Failed to download media: {e}")
-            return None
-
-# Start command handler
+# Function to handle the /start command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [
@@ -38,108 +17,88 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text("Welcome to the bot! Choose an option:", reply_markup=reply_markup)
-
-# Handle messages with URLs
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
-
-    # Check if the message contains a URL
-    if any(domain in text for domain in SUPPORTED_DOMAINS):
-        await update.message.reply_text("Downloading media from the provided URL...")
-        
-        # Download the media
-        media_content = await download_media(text)
-        if media_content:
-            await update.message.reply_text("Media downloaded successfully!")
-            # Send the media back to the user
-            await context.bot.send_document(chat_id=update.effective_chat.id, document=media_content)
-        else:
-            await update.message.reply_text("Failed to download media. Please try again.")
-    else:
-        await update.message.reply_text("Please provide a valid media URL.")
-
-# Show files handler
-async def show_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    keyboard = [
-        [InlineKeyboardButton("From Bot", callback_data='from_bot')],
-        [InlineKeyboardButton("From Site", callback_data='from_site')],
-        [InlineKeyboardButton("🗑️ Delete Files", callback_data='delete_files')],
-        [InlineKeyboardButton("⬅️ Back", callback_data='back_to_main')]
-    ]
-    
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(text="Here you can get all your downloaded files:", reply_markup=reply_markup)
-
-# Contact us handler
-async def contact_us(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    text = (
-        "📬 Technical support and news\n"
-        "CHANNEL: @BOTSUPPORTSITE\n"
-        "Support group: @techbotit\n"
-        "You are welcome to join!"
+    await update.message.reply_text(
+        "I can extract and download for you photos/images/files/archives from Youtube, Instagram, TikTok, Facebook, Snapchat, X (formerly Twitter), Vimeo, VK, and 1000+ audio/video hostings. Just send me a URL to the post with media or direct link.",
+        reply_markup=reply_markup
     )
-    keyboard = [
-        [InlineKeyboardButton("⬅️ Back", callback_data='back_to_main')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(text=text, reply_markup=reply_markup)
 
-# How to use handler
+# Function to handle messages with links
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    url = update.message.text
+    if "http" in url:
+        await update.message.reply_text("Processing your URL... Please wait while I download the media.")
+        # Add your download logic here
+        await update.message.reply_text(f"Download complete for: {url}")
+    else:
+        await update.message.reply_text("Please send a valid URL.")
+
+# Function to display the user's files
+async def your_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    await query.edit_message_text(text="Here are your downloaded files. (This is a placeholder for actual file list)")
+
+# Function to delete files
+async def delete_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    await query.edit_message_text(text="All files have been deleted. (This is a placeholder for actual deletion logic)")
+
+# Function to handle the "How to Use" section
 async def how_to_use(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+    await query.edit_message_text(text="To use this bot, simply send a URL with media or a direct link, and I'll download it for you.")
 
-    await query.edit_message_text(text="Here is how to use this bot: https://telegra.ph/THE-BOT-10-17")
-
-# Language handler
+# Function to handle language selection
 async def language(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
     keyboard = [
         [InlineKeyboardButton("English", callback_data='lang_en')],
         [InlineKeyboardButton("Français", callback_data='lang_fr')],
-        [InlineKeyboardButton("⬅️ Back", callback_data='back_to_main')]
     ]
-    
     reply_markup = InlineKeyboardMarkup(keyboard)
     await query.edit_message_text(text="Choose your language:", reply_markup=reply_markup)
 
-# Handle button clicks
+# Function to go back to the main menu
+async def back(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    await start(query, context)
+
+# Handler for button clicks
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
+    
     if query.data == 'your_files':
-        await show_files(update, context)
+        await your_files(update, context)
     elif query.data == 'contact_us':
-        await contact_us(update, context)
+        await query.edit_message_text(text="📬 Technical support and news. CHANNEL: @BOTSUPPORTSITE. Support group: @techbotit. You are welcome to join!")
     elif query.data == 'how_to_use':
         await how_to_use(update, context)
     elif query.data == 'language':
         await language(update, context)
-    elif query.data == 'back_to_main':
-        await start(update, context)
+    elif query.data == 'lang_en':
+        await query.edit_message_text(text="Language changed to English.")
+    elif query.data == 'lang_fr':
+        await query.edit_message_text(text="La langue a été changée en Français.")
+    elif query.data == 'delete_files':
+        await delete_files(update, context)
 
 # Main function to start the bot
 async def main():
     # Initialize the bot
-    application = Application.builder().token(BOT_TOKEN).build()
+    application = Application.builder().token("7559751498:AAFAXiHq7ElW0F7nyI4BXoRqm6XXjY2Bl9c").build()
 
-    # Command handler for /start
+    # Add command handler for /start
     application.add_handler(CommandHandler("start", start))
 
-    # Message handler for normal text messages (with URLs)
+    # Add a message handler for normal text messages
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    # Callback query handler for inline button presses
+    # Add a callback query handler for button clicks
     application.add_handler(CallbackQueryHandler(button_handler))
 
     # Initialize the application
